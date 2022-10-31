@@ -1,4 +1,5 @@
 # team7-week1-2
+
 원티드 프론트엔드 프리온보딩 7차 7팀 1-2 과제 레포리토리입니다
 
 ## :: 주요 기능
@@ -7,6 +8,7 @@
 
 - Context API를 생성, 최상위 컴포넌트에서 Provider로 state를 제공해주었습니다.
 - 또한 state관리의 용이성을 위해 최상위 파일에서 모든 로직을 담당했습니다.
+- `useFetch` 커스텀 훅을 활용해 Data Fetching 부분을 분리하였습니다.
 
 ```typescript
 export interface IssueContextInterface {
@@ -21,30 +23,50 @@ export const IssueContext = createContext<IssueContextInterface>(null);
 ```typescript
 function App() {
   const [issueList, setIssueList] = useState<Issue[]>([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, errors] = useFetch(setIssueList, page);
+
+  return (
+    <IssueContext.Provider value={{ issueList, isLoading, errors }}>
+    //...생략
+```
+
+```typescript
+function IssuesPage({ setPage }: Props) {
+  const { issueList, isLoading, errors } = useContext(IssueContext);
+  //...
+}
+```
+
+```typescript
+function useFetch(
+  setIssueList: Dispatch<SetStateAction<Issue[]>>,
+  page: number
+) {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState(false);
-  const [page, setPage] = useState(1);
 
-  const handleFetch = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const data = await IssuesService.getIssues(page);
-      setIssueList(prev => [...prev, ...data]);
-    } catch (error) {
-      setErrors(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const handleFetch = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      try {
+        const data = await IssuesService.getIssues(page);
+        setIssueList(prev => [...prev, ...data]);
+      } catch (error) {
+        setErrors(true);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setIssueList]
+  );
 
   useEffect(() => {
     handleFetch(page);
   }, [page, handleFetch]);
 
-  return (
-    <IssueContext.Provider value={{ issueList, isLoading, errors }}>
-
-    //...생략
+  return [isLoading, errors];
+}
 ```
 
 <br />
@@ -52,9 +74,9 @@ function App() {
 2. 로딩, 에러 처리
 
 - errors, isLoading 스테이트를 활용하였습니다.
-- 에러가 있을 경우 <Error / > 컴포넌트가 렌더됩니다.
-- 로딩 중일 경우 <Loading /> 컴포넌트가 렌더됩니다.
-- 구현 초기엔 <Error /> 컴포넌트 바로 다음 <Loading /> 컴포넌트가 위치해있었습니다. 이 경우 무한 스크롤 페칭 중 데이터 부분이 사라지고 로딩으로 변했다 다시 돌아오는 부자연스러운 렌더를 보여주었습니다. 따라서 <Loading /> 컴포넌트는 <IssueItem /> 최하단으로 위치시켰습니다.
+- 에러가 있을 경우 `<Error / >` 컴포넌트가 렌더됩니다.
+- 로딩 중일 경우 `<Loading />` 컴포넌트가 렌더됩니다.
+- 구현 초기엔 `<Error />` 컴포넌트 바로 다음 `<Loading />` 컴포넌트가 위치해있었습니다. 이 경우 무한 스크롤 페칭 중 데이터 부분이 사라지고 로딩으로 변했다 다시 돌아오는 부자연스러운 렌더를 보여주었습니다. 따라서 `<Loading />` 컴포넌트는 `<IssueItem />` 최하단으로 위치시켰습니다.
 
 ```jsx
 if (errors) {
