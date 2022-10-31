@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { IssuesService } from './apis/IssuesService';
 import { IssueContext } from './contexts/IssueContext';
+import useFetch from './hooks/useFetch';
 import { Issue } from './interfaces/Issue';
 import Layout from './Layouts/Layout';
 import DetailPage from './pages/DetailPage';
@@ -9,25 +9,8 @@ import IssuesPage from './pages/IssuesPage';
 
 function App() {
   const [issueList, setIssueList] = useState<Issue[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState(false);
   const [page, setPage] = useState(1);
-
-  const handleFetch = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const data = await IssuesService.getIssues(page);
-      setIssueList(prev => [...prev, ...data]);
-    } catch (error) {
-      setErrors(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    handleFetch(page);
-  }, [page, handleFetch]);
+  const [isLoading, errors] = useFetch(setIssueList, page);
 
   return (
     <BrowserRouter>
